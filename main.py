@@ -5,84 +5,103 @@ import subprocess
 import musicLibrary
 import requests
 import os
+from news import get_news
+from websites import open_website
+from dotenv import load_dotenv
+from ai_chat import get_ai_reply
 
+load_dotenv()
 recognizer = sr.Recognizer()   
 engine = pyttsx3.init()
-# https://newsapi.org/ this is url you can create the api key of NEWS
-apiKeyNews = os.getenv("NEWS_API_KEY", "")
 
 def speak(text):
     subprocess.run(["say", text], check=True)
-    # engine.say(text)
-    # engine.runAndWait()
+
+apiKeyNews = os.getenv("NEWS_API_KEY")
 
 def processCommand(c):
     
-    if "open google" in c.lower():
-        webbrowser.open("https://google.com")
-    elif "open facebook" in c.lower():
-        webbrowser.open("https://facebook.com")    
-    elif "open instagram" in c.lower():
-        webbrowser.open("https://instagram.com") 
-    elif "open linkdin" in c.lower():
-        webbrowser.open("https://linkdin.com")    
-    elif "open youtube" in c.lower():
-        webbrowser.open("https://youtube.com")  
-    # For music play i have created the music library file: 
+   # Open websites
+    exit_commands = {
+        "exit",
+        "quit",
+        "stop jarvis",
+        "bye",
+        "goodbye",
+        "thank you",
+        "thanks",
+        "thanks jarvis",
+        "thank you jarvis"
+    }
+
+    if c in exit_commands:
+        speak("Goodbye! Have a nice day.")
+        raise SystemExit
+    elif open_website(c):
+        return
+
+    # Play music 
     elif c.lower().startswith("play"):
-        songs = c.lower().split(" ")[1]
-        link=musicLibrary.music[songs]  
-        webbrowser.open(link)   
-        
-    elif "news" in c.lower():
-        url = f"https://newsapi.org/v2/top-headlines?country=us&apiKey={apiKeyNews}"
-        print("test 1")
+        songs = c.lower().split(" ", 1)[1].strip()
+        link = musicLibrary.music.get(songs)
 
-        response = requests.get(url, timeout=10)
-
-        if response.status_code == 200:
-            print("test 2")
-            data = response.json()
-            articles = data.get("articles", [])
-            print("test4",articles)
-
-            for article in articles[:5]:
-                title = article.get("title")
-                print("test 3")
-                if title:
-                    print(title)
-                    speak(title)
+        if link:
+            webbrowser.open(link)
         else:
-            print("API Error:", response.status_code)
-            speak("Unable to fetch news")
+            speak("Song not found")
+
+    # Fetch news
+    elif "news" in c.lower():
+        get_news(apiKeyNews, speak)
+        
+    else:
+        answer = get_ai_reply(c)
+        speak(answer)    
    
 
        
 
-
 if __name__ == "__main__":
-    speak("Initializing jarvis....")
+    speak("Initializing Jarvis. Say Hey Jarvis to activate me.")
+
+    active = False
 
     while True:
-        #listen for the  wake word  "Jarvis"
-        r = sr.Recognizer()
-        #recognization  speech using sphinx
-        print("recognization...")
         try:
             with sr.Microphone() as source:
-                print("Listening...")
-                audio = r.listen(source, timeout=5, phrase_time_limit=3)
-            word = r.recognize_google(audio) 
-            print("Recognized:", word)
+                if not active:
+                    print("Waiting for Hey Jarvis...")
+                    audio = recognizer.listen(
+                        source, timeout=5, phrase_time_limit=4
+                    )
 
-            if "hey jarvis" in word.lower():
-                # print("Wake word detected!")
-                speak("yes")  
-                # Listen for  one word 
-                with sr.Microphone() as source:
-                    print("jarvis active...")
-                    audio = r.listen(source, timeout=5, phrase_time_limit=5)
-                    command = r.recognize_google(audio) 
+                    word = recognizer.recognize_google(audio)
+                    print("Recognized:", word)
+
+                    if "hey jarvis" in word.lower():
+                        active = True
+                        speak("Yes, I am listening.")
+                else:
+                    print("Jarvis is active. Speak your command...")
+                    audio = recognizer.listen(
+                        source, timeout=10, phrase_time_limit=10
+                    )
+
+                    command = recognizer.recognize_google(audio)
+                    print("Command:", command)
                     processCommand(command)
-        except Exception as e:
-            print("Error; {0}".format(e))    
+
+        except sr.WaitTimeoutError:
+            print("No speech detected.")
+
+        except sr.UnknownValueError:
+            print("Sorry, I could not understand.")
+
+        except sr.RequestError as error:
+            print("Speech recognition error:", error)
+
+        except SystemExit:
+            break
+
+        except OSError as error:
+            print("Microphone error:", error)
