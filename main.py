@@ -21,7 +21,7 @@ apiKeyNews = os.getenv("NEWS_API_KEY")
 
 def processCommand(c):
     
-   # Open websites
+   # here is exit process from jarvis when you say below words it exit from system
     exit_commands = {
         "exit",
         "quit",
@@ -33,18 +33,19 @@ def processCommand(c):
         "thanks jarvis",
         "thank you jarvis"
     }
-
+    # Here  is the codition for exit
     if c in exit_commands:
         speak("Goodbye! Have a nice day.")
         raise SystemExit
+    # This is open website funtion while comand you can open google,linkdin etc link which is mentioned in websites file
     elif open_website(c):
         return
 
-    # Play music 
+    # THis is music codition  where i have created the dictionary get thename of songs
     elif c.lower().startswith("play"):
         songs = c.lower().split(" ", 1)[1].strip()
         link = musicLibrary.music.get(songs)
-
+    
         if link:
             webbrowser.open(link)
         else:
@@ -53,7 +54,7 @@ def processCommand(c):
     # Fetch news
     elif "news" in c.lower():
         get_news(apiKeyNews, speak)
-        
+    # THis is gemini codition where it get the command and pass to get_ai_reply function.
     else:
         answer = get_ai_reply(c)
         speak(answer)    
