@@ -9,7 +9,6 @@ import os
 recognizer = sr.Recognizer()   
 engine = pyttsx3.init()
 # https://newsapi.org/ this is url you can create the api key of NEWS
-# apiKeyNews = "98c735ada9f141e7b7c890a829aeec77"
 apiKeyNews = os.getenv("NEWS_API_KEY", "")
 
 def speak(text):
